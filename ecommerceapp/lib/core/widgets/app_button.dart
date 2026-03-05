@@ -35,6 +35,7 @@ class AppButton extends StatelessWidget {
             label,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
           );
 
