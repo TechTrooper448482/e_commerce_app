@@ -158,7 +158,7 @@ class SearchFilterPageState extends State<SearchFilterPage> {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => ProductDetailPage(productId: product.id),
+                    builder: (_) => ProductDetailView(productId: product.id),
                   ),
                 );
               },

@@ -27,14 +27,47 @@ class MockProductRemoteDataSource {
       <String, dynamic>{
         'id': 'p1',
         'name': 'Wireless Headphones',
-        'description': 'Noise-cancelling over-ear headphones with 30h battery.',
+        'description': 'Noise-cancelling over-ear headphones with 30h battery. '
+            'Comfortable for long listening sessions. Foldable design with travel case. '
+            'Bluetooth 5.2 and wired mode. Perfect for work and travel.',
         'price': 129.99,
+        'originalPrice': 169.99,
+        'stockCount': 3,
+        'urgencyTag': 'low_stock',
+        'colorOptions': <String>['Black', 'White', 'Silver', 'Navy'],
+        'sizeOptions': <String>['S', 'M', 'L', 'XL'],
+        'averageRating': 4.6,
+        'reviewCount': 128,
         'imageUrls': <String>[
-          'https://via.placeholder.com/600x400?text=Headphones+1',
-          'https://via.placeholder.com/600x400?text=Headphones+2',
+          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
+          'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=800',
+          'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800',
         ],
         'categoryId': 'c1',
         'isFeatured': true,
+        'reviews': <Map<String, dynamic>>[
+          {
+            'id': 'r1',
+            'authorName': 'Alex M.',
+            'rating': 5,
+            'body': 'Best headphones I\'ve owned. Battery lasts forever.',
+            'isVerifiedPurchase': true,
+          },
+          {
+            'id': 'r2',
+            'authorName': 'Jordan K.',
+            'rating': 4,
+            'body': 'Great sound and comfort. Only wish the case was a bit smaller.',
+            'isVerifiedPurchase': true,
+          },
+          {
+            'id': 'r3',
+            'authorName': 'Sam P.',
+            'rating': 5,
+            'body': 'Noise cancellation is incredible. Worth every penny.',
+            'isVerifiedPurchase': true,
+          },
+        ],
       },
       <String, dynamic>{
         'id': 'p2',
@@ -50,13 +83,29 @@ class MockProductRemoteDataSource {
       <String, dynamic>{
         'id': 'p3',
         'name': 'Casual Sneakers',
-        'description': 'Comfortable sneakers for everyday wear.',
+        'description': 'Comfortable sneakers for everyday wear. Lightweight and breathable.',
         'price': 79.90,
+        'originalPrice': 99.90,
+        'urgencyTag': 'best_seller',
+        'colorOptions': <String>['White', 'Black', 'Navy', 'Grey'],
+        'sizeOptions': <String>['S', 'M', 'L', 'XL'],
+        'averageRating': 4.8,
+        'reviewCount': 256,
         'imageUrls': <String>[
-          'https://via.placeholder.com/600x400?text=Sneakers+1',
+          'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800',
+          'https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?w=800',
         ],
         'categoryId': 'c2',
         'isFeatured': true,
+        'reviews': <Map<String, dynamic>>[
+          {
+            'id': 'r4',
+            'authorName': 'Taylor L.',
+            'rating': 5,
+            'body': 'So comfortable! My go-to daily shoes.',
+            'isVerifiedPurchase': true,
+          },
+        ],
       },
       <String, dynamic>{
         'id': 'p4',
@@ -594,8 +643,13 @@ class MockProductRemoteDataSource {
     };
 
     for (final map in raw) {
+      final urls = map['imageUrls'] as List<dynamic>?;
+      final useCategoryImage = urls == null ||
+          urls.length <= 1 ||
+          (urls.isNotEmpty &&
+              (urls.first as String).contains('via.placeholder'));
       final imageUrl = categoryImageMap[map['categoryId'] as String?];
-      if (imageUrl != null) {
+      if (useCategoryImage && imageUrl != null) {
         map['imageUrls'] = <String>[imageUrl];
       }
     }

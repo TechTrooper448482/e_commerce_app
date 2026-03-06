@@ -21,6 +21,10 @@ Color colorFromFilterName(String name) {
       return AppColors.filterBeige;
     case 'pink':
       return Colors.pink;
+    case 'silver':
+      return const Color(0xFFC0C0C0);
+    case 'navy':
+      return const Color(0xFF000080);
     default:
       return Colors.grey;
   }

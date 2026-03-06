@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../products/domain/entities/product_entity.dart';
-import '../../../products/presentation/pages/product_detail_page.dart';
+import '../../../products/presentation/pages/product_detail_view.dart';
 import 'discovery_product_card.dart';
 
 /// Two-column grid of trending products for discovery home.
@@ -34,7 +34,7 @@ class DiscoveryTrendingGrid extends StatelessWidget {
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => ProductDetailPage(productId: product.id),
+                      builder: (_) => ProductDetailView(productId: product.id),
                     ),
                   );
                 },

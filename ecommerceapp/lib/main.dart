@@ -22,6 +22,8 @@ import 'features/discovery/presentation/providers/search_filter_provider.dart';
 import 'features/products/data/datasources/mock_product_remote_data_source.dart';
 import 'features/products/data/repositories/product_repository_impl.dart';
 import 'features/products/domain/repositories/product_repository.dart';
+import 'features/products/domain/usecases/get_product_detail_usecase.dart';
+import 'features/products/presentation/providers/product_detail_provider.dart';
 import 'features/products/presentation/providers/product_provider.dart';
 import 'features/profile/data/datasources/mock_profile_remote_data_source.dart';
 import 'features/profile/data/repositories/profile_repository_impl.dart';
@@ -50,6 +52,7 @@ class EcommerceApp extends StatelessWidget {
     final ProductRepository productRepository = ProductRepositoryImpl(
       remoteDataSource: MockProductRemoteDataSource(),
     );
+    final getProductDetailUseCase = GetProductDetailUseCase(productRepository);
     final CartRepository cartRepository = CartRepositoryImpl();
 
     final ProfileRepository profileRepository = ProfileRepositoryImpl(
@@ -84,6 +87,11 @@ class EcommerceApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => ProductProvider(productRepository: productRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProductDetailProvider(
+            getProductDetailUseCase: getProductDetailUseCase,
+          ),
         ),
         ChangeNotifierProvider(
           create: (_) => CartProvider(cartRepository: cartRepository),

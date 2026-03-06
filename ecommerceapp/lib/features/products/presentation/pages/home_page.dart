@@ -7,7 +7,7 @@ import '../../domain/entities/category_entity.dart';
 import '../providers/product_provider.dart';
 import '../widgets/category_chip.dart';
 import '../widgets/product_card.dart';
-import 'product_detail_page.dart';
+import 'product_detail_view.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -159,7 +159,7 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => ProductDetailPage(productId: product.id),
+                    builder: (_) => ProductDetailView(productId: product.id),
                   ),
                 );
               },
@@ -193,7 +193,7 @@ class _HomePageState extends State<HomePage> {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => ProductDetailPage(productId: product.id),
+                  builder: (_) => ProductDetailView(productId: product.id),
                 ),
               );
             },

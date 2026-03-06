@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../products/domain/entities/product_entity.dart';
-import '../../../products/presentation/pages/product_detail_page.dart';
+import '../../../products/presentation/pages/product_detail_view.dart';
 import '../../domain/repositories/discovery_repository.dart';
 import '../providers/search_filter_provider.dart';
 import '../widgets/search_filter_product_card.dart';
