@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/cart_item_entity.dart';
+import 'cart_quantity_button.dart';
 
 class CartItemTile extends StatelessWidget {
   const CartItemTile({
@@ -127,7 +128,7 @@ class CartItemTile extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _QuantityButton(
+                        CartQuantityButton(
                           icon: Icons.remove,
                           onPressed: item.quantity > 1 ? onDecrement : null,
                         ),
@@ -149,7 +150,7 @@ class CartItemTile extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        _QuantityButton(
+                        CartQuantityButton(
                           icon: Icons.add,
                           onPressed: onIncrement,
                         ),
@@ -161,38 +162,6 @@ class CartItemTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _QuantityButton extends StatelessWidget {
-  const _QuantityButton({
-    required this.icon,
-    this.onPressed,
-  });
-
-  final IconData icon;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    return Material(
-      color: enabled ? const Color(0xFF0054F6) : Colors.grey.shade300,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onPressed,
-        customBorder: const CircleBorder(),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(
-            icon,
-            color: enabled ? Colors.white : Colors.white70,
-            size: 18,
-          ),
-        ),
       ),
     );
   }

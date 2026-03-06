@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/auth_page_dot.dart';
 
 class ReadyStartPage extends StatelessWidget {
   const ReadyStartPage({super.key});
@@ -170,13 +171,13 @@ class ReadyStartPage extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _PageDot(isActive: false),
+                    AuthPageDot(isActive: false),
                     const SizedBox(width: 8),
-                    _PageDot(isActive: false),
+                    AuthPageDot(isActive: false),
                     const SizedBox(width: 8),
-                    _PageDot(isActive: false),
+                    AuthPageDot(isActive: false),
                     const SizedBox(width: 8),
-                    _PageDot(isActive: true),
+                    AuthPageDot(isActive: true),
                   ],
                 ),
                 const Spacer(),
@@ -200,23 +201,3 @@ class ReadyStartPage extends StatelessWidget {
   }
 }
 
-class _PageDot extends StatelessWidget {
-  const _PageDot({required this.isActive});
-
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isActive
-            ? const Color(0xFF0054F6)
-            : const Color(0xFFD8DEEA),
-      ),
-    );
-  }
-}
