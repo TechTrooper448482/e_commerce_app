@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../products/domain/entities/product_entity.dart';
 import '../../../products/presentation/pages/product_detail_page.dart';
-import '../../data/services/mock_product_service.dart';
+import '../providers/discovery_data_provider.dart';
 import '../providers/favorites_provider.dart';
 
-/// Sub-category view: filtered product grid for a given category.
+/// Sub-category view: product grid for a given category.
+/// Data and loading from [DiscoveryDataProvider]; no business logic in widget.
 class SubCategoryPage extends StatefulWidget {
   const SubCategoryPage({
     super.key,
@@ -22,39 +24,35 @@ class SubCategoryPage extends StatefulWidget {
 }
 
 class _SubCategoryPageState extends State<SubCategoryPage> {
-  List<ProductEntity> _products = [];
-  bool _loading = true;
-
   @override
   void initState() {
     super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final service = context.read<MockProductService>();
-    final list = await service.getProductsByCategory(widget.categoryId);
-    if (!mounted) return;
-    setState(() {
-      _products = list;
-      _loading = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<DiscoveryDataProvider>().loadProductsByCategory(widget.categoryId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final discovery = context.watch<DiscoveryDataProvider>();
+
+    final products = discovery.loadedCategoryId == widget.categoryId
+        ? discovery.categoryProducts
+        : <ProductEntity>[];
+    final loading = discovery.isLoadingCategory && discovery.loadedCategoryId == widget.categoryId;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.categoryName),
       ),
-      body: _loading
+      body: loading
           ? const Center(child: CircularProgressIndicator())
-          : _products.isEmpty
+          : products.isEmpty
               ? Center(
                   child: Text(
-                    'No products in this category',
+                    AppConstants.noProductsInCategory,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -77,9 +75,9 @@ class _SubCategoryPageState extends State<SubCategoryPage> {
                         crossAxisSpacing: spacing,
                         childAspectRatio: aspectRatio,
                       ),
-                      itemCount: _products.length,
+                      itemCount: products.length,
                       itemBuilder: (context, index) {
-                        final product = _products[index];
+                        final product = products[index];
                         return _SubCategoryProductCard(
                           product: product,
                           onTap: () {

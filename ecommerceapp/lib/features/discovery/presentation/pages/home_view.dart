@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../products/domain/entities/category_entity.dart';
 import '../../../products/domain/entities/product_entity.dart';
 import '../../../products/presentation/pages/product_detail_page.dart';
-import '../../data/services/mock_product_service.dart';
+import '../../domain/entities/banner_entity.dart';
+import '../../domain/entities/discovery_category_entity.dart';
+import '../providers/discovery_data_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/home_provider.dart';
 import 'category_list_page.dart';
@@ -12,6 +16,7 @@ import 'search_filter_page.dart';
 import 'sub_category_page.dart';
 
 /// Discovery Home: search bar, auto-scrolling banner, horizontal categories, trending grid.
+/// All data and loading logic live in [DiscoveryDataProvider] and [HomeProvider].
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
 
@@ -20,16 +25,16 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  List<DiscoveryCategory> _discoveryCategories = [];
-  List<ProductEntity> _trendingProducts = [];
-  bool _loading = true;
   late PageController _bannerPageController;
 
   @override
   void initState() {
     super.initState();
     _bannerPageController = PageController();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<DiscoveryDataProvider>().loadDiscoveryHome();
+    });
   }
 
   @override
@@ -38,21 +43,17 @@ class _HomeViewState extends State<HomeView> {
     super.dispose();
   }
 
-  Future<void> _load() async {
-    final service = context.read<MockProductService>();
-    final categories = await service.getDiscoveryCategories();
-    final products = await service.getTrendingProducts();
-    if (!mounted) return;
-    setState(() {
-      _discoveryCategories = categories;
-      _trendingProducts = products;
-      _loading = false;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final discovery = context.watch<DiscoveryDataProvider>();
+    final home = context.read<HomeProvider>();
+
+    if (discovery.banners.isNotEmpty && home.bannerCount != discovery.banners.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) home.updateBannerCount(discovery.banners.length);
+      });
+    }
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -76,7 +77,7 @@ class _HomeViewState extends State<HomeView> {
                     _BannerSection(controller: _bannerPageController),
                     const SizedBox(height: 24),
                     _CategoriesSection(
-                      discoveryCategories: _discoveryCategories,
+                      discoveryCategories: discovery.discoveryCategories,
                       onSeeAll: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
@@ -96,30 +97,25 @@ class _HomeViewState extends State<HomeView> {
                       },
                     ),
                     const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Trending',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      AppConstants.sectionTrending,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 12),
                   ],
                 ),
               ),
             ),
-            if (_loading)
+            if (discovery.isLoadingHome)
               const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()),
               )
             else
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: _TrendingGrid(products: _trendingProducts),
+                sliver: _TrendingGrid(products: discovery.trendingProducts),
               ),
           ],
         ),
@@ -136,7 +132,6 @@ class _SearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Material(
       color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
       borderRadius: BorderRadius.circular(14),
@@ -154,7 +149,7 @@ class _SearchBar extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'Search products',
+                AppConstants.searchPlaceholder,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -204,9 +199,10 @@ class _BannerSectionState extends State<_BannerSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<HomeProvider>(
-      builder: (context, provider, _) {
-        final banners = provider.banners;
+    final theme = Theme.of(context);
+    return Consumer2<DiscoveryDataProvider, HomeProvider>(
+      builder: (context, discovery, home, _) {
+        final banners = discovery.banners;
         if (banners.isEmpty) return const SizedBox.shrink();
 
         return Column(
@@ -217,71 +213,12 @@ class _BannerSectionState extends State<_BannerSection> {
               child: PageView.builder(
                 controller: widget.controller,
                 itemCount: banners.length,
-                onPageChanged: provider.setBannerIndex,
-                itemBuilder: (context, index) {
-              final banner = banners[index];
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        banner.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        ),
-                      ),
-                      if (banner.title != null)
-                        Positioned(
-                          left: 16,
-                          bottom: 16,
-                          right: 16,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                banner.title!,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black54,
-                                      offset: const Offset(0, 1),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (banner.subtitle != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  banner.subtitle!,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.white70,
-                                    shadows: [
-                                      const Shadow(
-                                        color: Colors.black45,
-                                        offset: Offset(0, 1),
-                                        blurRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
+                onPageChanged: home.setBannerIndex,
+                itemBuilder: (context, index) => _BannerSlide(
+                  banner: banners[index],
+                  theme: theme,
                 ),
-              );
-            },
-          ),
+              ),
             ),
             const SizedBox(height: 10),
             Row(
@@ -291,13 +228,13 @@ class _BannerSectionState extends State<_BannerSection> {
                 (i) => AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: i == provider.currentBannerIndex ? 18 : 6,
+                  width: i == home.currentBannerIndex ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(3),
-                    color: i == provider.currentBannerIndex
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                    color: i == home.currentBannerIndex
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface.withOpacity(0.3),
                   ),
                 ),
               ),
@@ -309,6 +246,77 @@ class _BannerSectionState extends State<_BannerSection> {
   }
 }
 
+class _BannerSlide extends StatelessWidget {
+  const _BannerSlide({required this.banner, required this.theme});
+
+  final BannerEntity banner;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              banner.imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+              ),
+            ),
+            if (banner.title != null)
+              Positioned(
+                left: 16,
+                bottom: 16,
+                right: 16,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      banner.title!,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black54,
+                            offset: const Offset(0, 1),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (banner.subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        banner.subtitle!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.white70,
+                          shadows: [
+                            const Shadow(
+                              color: Colors.black45,
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CategoriesSection extends StatelessWidget {
   const _CategoriesSection({
     required this.discoveryCategories,
@@ -316,7 +324,7 @@ class _CategoriesSection extends StatelessWidget {
     required this.onCategoryTap,
   });
 
-  final List<DiscoveryCategory> discoveryCategories;
+  final List<DiscoveryCategoryEntity> discoveryCategories;
   final VoidCallback onSeeAll;
   final void Function(CategoryEntity) onCategoryTap;
 
@@ -338,7 +346,6 @@ class _CategoriesSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -346,14 +353,14 @@ class _CategoriesSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Categories',
+              AppConstants.sectionCategories,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             TextButton(
               onPressed: onSeeAll,
-              child: const Text('See all'),
+              child: const Text(AppConstants.seeAll),
             ),
           ],
         ),
@@ -365,7 +372,7 @@ class _CategoriesSection extends StatelessWidget {
             itemCount: discoveryCategories.length,
             itemBuilder: (context, index) {
               final dc = discoveryCategories[index];
-              final cat = dc.entity;
+              final cat = dc.category;
               return Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: _CategoryChip(
@@ -396,7 +403,6 @@ class _CategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -444,8 +450,8 @@ class _TrendingGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverLayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = 2;
-        final spacing = 12.0;
+        const crossAxisCount = 2;
+        const spacing = 12.0;
         final width = (constraints.crossAxisExtent - spacing) / crossAxisCount;
         final aspectRatio = width / (width * 1.35);
 

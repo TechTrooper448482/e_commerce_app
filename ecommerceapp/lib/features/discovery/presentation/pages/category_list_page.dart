@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/services/mock_product_service.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../providers/discovery_data_provider.dart';
 import 'sub_category_page.dart';
 
 /// Main category list with high-quality background images.
-/// Tapping a category navigates to [SubCategoryPage].
+/// Data and loading from [DiscoveryDataProvider]; no business logic in widget.
 class CategoryListPage extends StatefulWidget {
   const CategoryListPage({super.key});
 
@@ -14,41 +15,35 @@ class CategoryListPage extends StatefulWidget {
 }
 
 class _CategoryListPageState extends State<CategoryListPage> {
-  List<DiscoveryCategory> _categories = [];
-  bool _loading = true;
-
   @override
   void initState() {
     super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final service = context.read<MockProductService>();
-    final list = await service.getDiscoveryCategories();
-    if (!mounted) return;
-    setState(() {
-      _categories = list;
-      _loading = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final discovery = context.read<DiscoveryDataProvider>();
+      if (discovery.discoveryCategories.isEmpty && !discovery.isLoadingHome) {
+        discovery.loadDiscoveryHome();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final discovery = context.watch<DiscoveryDataProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Categories'),
+        title: const Text(AppConstants.categoriesTitle),
       ),
-      body: _loading
+      body: discovery.isLoadingHome
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              itemCount: _categories.length,
+              itemCount: discovery.discoveryCategories.length,
               itemBuilder: (context, index) {
-                final dc = _categories[index];
-                final cat = dc.entity;
+                final dc = discovery.discoveryCategories[index];
+                final cat = dc.category;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: _CategoryTile(

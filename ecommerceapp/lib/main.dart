@@ -16,8 +16,10 @@ import 'features/cart/data/repositories/cart_repository_impl.dart';
 import 'features/cart/domain/repositories/cart_repository.dart';
 import 'features/cart/presentation/pages/cart_page.dart';
 import 'features/cart/presentation/providers/cart_provider.dart';
-import 'features/discovery/data/services/mock_product_service.dart';
+import 'features/discovery/data/repositories/discovery_repository_impl.dart';
+import 'features/discovery/domain/repositories/discovery_repository.dart';
 import 'features/discovery/presentation/pages/home_view.dart';
+import 'features/discovery/presentation/providers/discovery_data_provider.dart';
 import 'features/discovery/presentation/providers/favorites_provider.dart';
 import 'features/discovery/presentation/providers/home_provider.dart';
 import 'features/discovery/presentation/providers/search_filter_provider.dart';
@@ -61,14 +63,18 @@ class EcommerceApp extends StatelessWidget {
       remoteDataSource: MockProfileRemoteDataSource(),
     );
 
-    final MockProductService mockProductService =
-        MockProductService(productRepository: productRepository);
+    final DiscoveryRepository discoveryRepository = DiscoveryRepositoryImpl(
+      productRepository: productRepository,
+    );
 
     return MultiProvider(
       providers: [
-        Provider<MockProductService>.value(value: mockProductService),
+        Provider<DiscoveryRepository>.value(value: discoveryRepository),
         ChangeNotifierProvider(
-          create: (_) => HomeProvider(productService: mockProductService),
+          create: (_) => DiscoveryDataProvider(repository: discoveryRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => HomeProvider(),
         ),
         ChangeNotifierProvider(
           create: (_) => SearchFilterProvider(),

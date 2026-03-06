@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../products/domain/entities/product_entity.dart';
 import '../../../products/presentation/pages/product_detail_page.dart';
-import '../../data/services/mock_product_service.dart';
+import '../../domain/repositories/discovery_repository.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/search_filter_provider.dart';
 
 /// Search & Filter: active search, recent chips, filter sheet (price, color, size, rating).
+/// All search and filter logic is in [SearchFilterProvider]; this widget only displays state.
 class SearchFilterPage extends StatefulWidget {
   const SearchFilterPage({super.key});
 
@@ -18,13 +21,15 @@ class SearchFilterPage extends StatefulWidget {
 class _SearchFilterPageState extends State<SearchFilterPage> {
   final _focusNode = FocusNode();
   final _controller = TextEditingController();
-  List<ProductEntity> _products = [];
-  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final repo = context.read<DiscoveryRepository>();
+      context.read<SearchFilterProvider>().loadTrendingResults(repo);
+    });
   }
 
   @override
@@ -34,22 +39,10 @@ class _SearchFilterPageState extends State<SearchFilterPage> {
     super.dispose();
   }
 
-  Future<void> _loadProducts({String? query}) async {
-    setState(() => _loading = true);
-    final service = context.read<MockProductService>();
-    final list = query != null && query.trim().isNotEmpty
-        ? await service.searchProducts(query)
-        : await service.getTrendingProducts();
-    if (!mounted) return;
-    setState(() {
-      _products = list;
-      _loading = false;
-    });
-  }
-
   void _onSearchSubmitted(String value) {
     context.read<SearchFilterProvider>().addRecentSearch(value);
-    _loadProducts(query: value);
+    final repo = context.read<DiscoveryRepository>();
+    context.read<SearchFilterProvider>().search(repo, value);
   }
 
   void _showFilterSheet(BuildContext context) {
@@ -68,7 +61,7 @@ class _SearchFilterPageState extends State<SearchFilterPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Search'),
+        title: const Text(AppConstants.searchTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.tune),
@@ -86,7 +79,7 @@ class _SearchFilterPageState extends State<SearchFilterPage> {
               focusNode: _focusNode,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'Search products',
+                hintText: AppConstants.searchPlaceholder,
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -103,14 +96,14 @@ class _SearchFilterPageState extends State<SearchFilterPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Recent',
+                    AppConstants.recentSearches,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   TextButton(
                     onPressed: () => filterProvider.clearRecentSearches(),
-                    child: const Text('Clear'),
+                    child: const Text(AppConstants.clear),
                   ),
                 ],
               ),
@@ -138,30 +131,20 @@ class _SearchFilterPageState extends State<SearchFilterPage> {
             const SizedBox(height: 16),
           ],
           Expanded(
-            child: _loading
+            child: filterProvider.isSearching
                 ? const Center(child: CircularProgressIndicator())
-                : _buildProductGrid(_applyFilters(_products), theme),
+                : _buildProductGrid(filterProvider.filteredSearchResults, theme),
           ),
         ],
       ),
     );
   }
 
-  List<ProductEntity> _applyFilters(List<ProductEntity> list) {
-    final fp = context.read<SearchFilterProvider>();
-    return list.where((p) {
-      if (p.price < fp.priceRange.start || p.price > fp.priceRange.end) {
-        return false;
-      }
-      return true;
-    }).toList();
-  }
-
   Widget _buildProductGrid(List<ProductEntity> products, ThemeData theme) {
     if (products.isEmpty) {
       return Center(
         child: Text(
-          'No products match',
+          AppConstants.noProductsMatch,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -325,7 +308,7 @@ class _FilterSheet extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Filters',
+                        AppConstants.filters,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -338,7 +321,7 @@ class _FilterSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Price range',
+                    AppConstants.priceRange,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   RangeSlider(
@@ -354,7 +337,7 @@ class _FilterSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Color',
+                    AppConstants.color,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 8),
@@ -384,7 +367,7 @@ class _FilterSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Size',
+                    AppConstants.size,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 8),
@@ -400,7 +383,7 @@ class _FilterSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Minimum rating',
+                    AppConstants.minimumRating,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 8),
@@ -439,7 +422,7 @@ class _FilterSheet extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           shape: const StadiumBorder(),
                         ),
-                        child: const Text('Clear'),
+                        child: const Text(AppConstants.clear),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -448,7 +431,7 @@ class _FilterSheet extends StatelessWidget {
                           style: FilledButton.styleFrom(
                             shape: const StadiumBorder(),
                           ),
-                          child: const Text('Apply'),
+                          child: const Text(AppConstants.apply),
                         ),
                       ),
                     ],
@@ -478,7 +461,7 @@ Color _colorFromName(String name) {
       case 'grey':
         return Colors.grey;
       case 'beige':
-        return const Color(0xFFF5F5DC);
+        return AppColors.filterBeige;
       case 'pink':
         return Colors.pink;
       default:
