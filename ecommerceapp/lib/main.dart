@@ -16,14 +16,20 @@ import 'features/cart/data/repositories/cart_repository_impl.dart';
 import 'features/cart/domain/repositories/cart_repository.dart';
 import 'features/cart/presentation/pages/cart_page.dart';
 import 'features/cart/presentation/providers/cart_provider.dart';
+import 'features/discovery/data/services/mock_product_service.dart';
+import 'features/discovery/presentation/pages/home_view.dart';
+import 'features/discovery/presentation/providers/favorites_provider.dart';
+import 'features/discovery/presentation/providers/home_provider.dart';
+import 'features/discovery/presentation/providers/search_filter_provider.dart';
 import 'features/products/data/datasources/mock_product_remote_data_source.dart';
 import 'features/products/data/repositories/product_repository_impl.dart';
 import 'features/products/domain/repositories/product_repository.dart';
-import 'features/products/presentation/pages/home_page.dart';
 import 'features/products/presentation/providers/product_provider.dart';
 import 'features/profile/data/datasources/mock_profile_remote_data_source.dart';
 import 'features/profile/data/repositories/profile_repository_impl.dart';
 import 'features/profile/domain/repositories/profile_repository.dart';
+import 'features/onboarding/presentation/pages/onboarding_page.dart';
+import 'features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/profile/presentation/providers/profile_provider.dart';
 
@@ -55,8 +61,21 @@ class EcommerceApp extends StatelessWidget {
       remoteDataSource: MockProfileRemoteDataSource(),
     );
 
+    final MockProductService mockProductService =
+        MockProductService(productRepository: productRepository);
+
     return MultiProvider(
       providers: [
+        Provider<MockProductService>.value(value: mockProductService),
+        ChangeNotifierProvider(
+          create: (_) => HomeProvider(productService: mockProductService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SearchFilterProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => FavoritesProvider(),
+        ),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(
             loginUseCase: loginUseCase,
@@ -73,14 +92,32 @@ class EcommerceApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ProfileProvider(repository: profileRepository),
         ),
+        ChangeNotifierProvider(
+          create: (_) => OnboardingProvider(),
+        ),
       ],
       child: MaterialApp(
         title: 'E-commerce App',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const _RootNavigator(),
+        home: const _OnboardingGate(),
       ),
     );
+  }
+}
+
+/// Shows onboarding until the user completes it (Skip or Get Started),
+/// then shows the main app (auth flow or shell).
+class _OnboardingGate extends StatelessWidget {
+  const _OnboardingGate();
+
+  @override
+  Widget build(BuildContext context) {
+    final onboarding = context.watch<OnboardingProvider>();
+    if (!onboarding.hasCompletedOnboarding) {
+      return const OnboardingPage();
+    }
+    return const _RootNavigator();
   }
 }
 
@@ -112,7 +149,7 @@ class _MainShellState extends State<_MainShell> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = <Widget>[
-    const HomePage(),
+    const HomeView(),
     const CartPage(),
     const ProfilePage(),
   ];

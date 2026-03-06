@@ -19,18 +19,14 @@ class CategoryChip extends StatelessWidget {
     final theme = Theme.of(context);
 
     return ChoiceChip(
-      label: Text(
-        category.name,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-        ),
-      ),
+      label: Text(category.name),
       selected: isSelected,
       onSelected: (_) => onSelected(),
       backgroundColor: Colors.white,
-      selectedColor: theme.colorScheme.onBackground,
+      selectedColor: theme.colorScheme.primary,
       labelStyle: theme.textTheme.bodyMedium?.copyWith(
-        color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+        color: isSelected ? Colors.white : Colors.black,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),

@@ -226,6 +226,43 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 28),
+                      Row(
+                        children: [
+                          Expanded(child: Divider(color: Colors.grey.shade400)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'or continue with',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.black45,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Expanded(child: Divider(color: Colors.grey.shade400)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _SocialLoginButton(
+                            onTap: () => _showSocialSnackBar(context, 'Google'),
+                            icon: Icons.g_mobiledata,
+                          ),
+                          const SizedBox(width: 20),
+                          _SocialLoginButton(
+                            onTap: () => _showSocialSnackBar(context, 'Apple'),
+                            icon: Icons.apple,
+                          ),
+                          const SizedBox(width: 20),
+                          _SocialLoginButton(
+                            onTap: () => _showSocialSnackBar(context, 'Facebook'),
+                            icon: Icons.facebook,
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 24),
                       Text(
                         'This is a mock auth flow. Replace the auth data source and repository with your real API calls.',
@@ -241,6 +278,50 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  static void _showSocialSnackBar(BuildContext context, String provider) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$provider sign-in – integrate your OAuth flow here.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
+class _SocialLoginButton extends StatelessWidget {
+  const _SocialLoginButton({
+    required this.onTap,
+    required this.icon,
+  });
+
+  final VoidCallback onTap;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      elevation: 1,
+      shadowColor: Colors.black26,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 56,
+          height: 56,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Icon(icon, size: 26, color: Colors.black87),
+        ),
       ),
     );
   }
